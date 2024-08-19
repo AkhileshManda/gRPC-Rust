@@ -89,6 +89,7 @@ async fn run_route_chat(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
     Ok(())
 }
 
+// Main client
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = RouteGuideClient::connect("http://[::1]:10000").await?;

@@ -17,26 +17,39 @@ pub mod routeguide {
 
 mod data;
 
+//our service contains a list of features
 #[derive(Debug)]
 pub struct RouteGuideService {
     features: Arc<Vec<Feature>>,
 }
 
+//This trait is coming from the generated file (from proto)
+// All the methods are listed in the service
 #[tonic::async_trait]
 impl RouteGuide for RouteGuideService {
+    // get a feature at a particular point
+    //
+    // takes the grpc req with point as input and returns a Feature response with status
     async fn get_feature(&self, request: Request<Point>) -> Result<Response<Feature>, Status> {
         println!("GetFeature = {:?}", request);
 
+        // linearly searching for all the features and returning if we find one
         for feature in &self.features[..] {
             if feature.location.as_ref() == Some(request.get_ref()) {
                 return Ok(Response::new(feature.clone()));
             }
         }
 
+        // return a default feature if nothing is found
         Ok(Response::new(Feature::default()))
     }
 
     type ListFeaturesStream = ReceiverStream<Result<Feature, Status>>;
+
+    // Obtains the Features available within the given Rectangle.  Results are
+    // streamed rather than returned at once (e.g. in a response message with a
+    // repeated field), as the rectangle may cover a large area and contain a
+    // huge number of features.
 
     async fn list_features(
         &self,
@@ -60,6 +73,11 @@ impl RouteGuide for RouteGuideService {
 
         Ok(Response::new(ReceiverStream::new(rx)))
     }
+
+    // A client-to-server streaming RPC.
+    //
+    // Accepts a stream of Points on a route being traversed, returning a
+    // RouteSummary when traversal is completed.
 
     async fn record_route(
         &self,
@@ -101,6 +119,11 @@ impl RouteGuide for RouteGuideService {
         Ok(Response::new(summary))
     }
 
+    // A Bidirectional streaming RPC.
+    //
+    // Accepts a stream of RouteNotes sent while a route is being traversed,
+    // while receiving other RouteNotes (e.g. from other users).
+
     type RouteChatStream = Pin<Box<dyn Stream<Item = Result<RouteNote, Status>> + Send + 'static>>;
 
     async fn route_chat(
@@ -131,6 +154,7 @@ impl RouteGuide for RouteGuideService {
     }
 }
 
+// main server code
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:10000".parse().unwrap();
@@ -138,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("RouteGuideServer listening on: {}", addr);
 
     let route_guide = RouteGuideService {
-        features: Arc::new(data::load()),
+        features: Arc::new(data::load()), //load initial data
     };
 
     let svc = RouteGuideServer::new(route_guide);

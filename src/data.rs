@@ -1,3 +1,14 @@
+// Code to deserialise json data in route_guide_db.json
+//
+// data is a list of the json like the following
+// {
+//   "location": {
+//     "latitude": 407838351,
+//     "longitude": -746143763
+//   },
+//   "name": "Patriots Path, Mendham, NJ 07945, USA"
+// },
+
 use serde::Deserialize;
 use std::fs::File;
 
@@ -20,10 +31,12 @@ pub fn load() -> Vec<crate::routeguide::Feature> {
 
     let decoded: Vec<Feature> =
         serde_json::from_reader(&file).expect("failed to deserialize features");
+    //decoded json
 
+    //put the list of features into the server
     decoded
         .into_iter()
-        .map(|feature|crate::routeguide::Feature {
+        .map(|feature| crate::routeguide::Feature {
             name: feature.name,
             location: Some(crate::routeguide::Point {
                 longitude: feature.location.longitude,
